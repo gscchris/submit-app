@@ -8,7 +8,8 @@ app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 PASSWORD = os.environ.get('FORM_PASSWORD', 'Coffee123!')
 N8N_WEBHOOK = os.environ.get('N8N_WEBHOOK_URL', '')
-DISCORD_WEBHOOK = os.environ.get('DISCORD_WEBHOOK_URL', '')
+DISCORD_BOT_TOKEN = os.environ.get('DISCORD_BOT_TOKEN', '')
+DISCORD_CHANNEL_ID = os.environ.get('DISCORD_CHANNEL_ID', '1553401627673763870')
 
 LOGIN_TEMPLATE = '''
 <!DOCTYPE html>
@@ -272,13 +273,20 @@ def submit():
         except Exception as e:
             print(f"Failed to send to n8n: {e}")
 
-    if DISCORD_WEBHOOK:
+    # Send via Discord Bot API
+    if DISCORD_BOT_TOKEN:
         try:
-            requests.post(DISCORD_WEBHOOK, json={
-                'content': f"**📩 New submission from submit.agent86.cloud**\n```\n{message}\n```"
-            }, timeout=10)
+            discord_text = f"**📩 New submission from submit.agent86.cloud**\n```\n{message}\n```"
+            if len(discord_text) > 2000:
+                discord_text = discord_text[:1997] + "..."
+            requests.post(
+                f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages",
+                headers={"Authorization": f"Bot {DISCORD_BOT_TOKEN}"},
+                json={"content": discord_text},
+                timeout=10
+            )
         except Exception as e:
-            print(f"Failed to send to Discord webhook: {e}")
+            print(f"Failed to send to Discord: {e}")
 
     return render_template_string(FORM_TEMPLATE, submitted=True)
 
